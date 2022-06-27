@@ -11,7 +11,7 @@ RUN apt-get update \
  && sed -i 's/\#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 EXPOSE 22
 
-RUN apt-get install -y binutils libproj-dev gdal-bin libgdal-dev
+RUN apt-get install -y binutils libproj-dev gdal-bin libgdal-dev libspatialindex-dev
 
 COPY requirements.txt /usr/src/app/
 RUN pip install -r requirements.txt
