@@ -2,3 +2,4 @@ pydeck
 requests
 pandas
 geopandas
+rtree
