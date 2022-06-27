@@ -1,13 +1,8 @@
 # %%
 import pydeck as pdk
 import geopandas as gpd
+import numpy as np
 
-# %%
-gdf = gpd.read_file('https://opendata-daerani.hub.arcgis.com/datasets/DAERANI::rivers-strahler-ranking.zip?outSR=%7B%22latestWkid%22%3A29902%2C%22wkid%22%3A29900%7D')
-gdf.geometry = gdf.geometry.to_crs('4326')
-gdf['colour'] = [(180,0,200,150)] * len(gdf)
-
-# %%
 def extract_coord_lists(x):
     if x.type == 'MultiLineString':
         return [list(line.coords) for line in x]
@@ -16,8 +11,20 @@ def extract_coord_lists(x):
     else:
         raise Exception('Unknown type {x.type}')
 
+# %% Colour schemes from RMetBrewer
+Egypt =  [(221, 82, 41), (53, 122, 62), (81, 179, 132), (243, 179, 84)]
+Hokusai3 = [(217, 219, 122), (117, 200, 195), (43, 82, 132), (15, 44, 87)]
+colours = Hokusai3
+
+# %%
+gdf = gpd.read_file('https://opendata-daerani.hub.arcgis.com/datasets/DAERANI::rivers-strahler-ranking.zip?outSR=%7B%22latestWkid%22%3A29902%2C%22wkid%22%3A29900%7D')
+gdf.geometry = gdf.geometry.to_crs('4326')
 gdf['plotstrings'] = gdf.geometry.apply(extract_coord_lists)
-gdf["colour"] = [(180,0,200,150)] * len(gdf)
+basins = gpd.read_file('https://opendata-daerani.hub.arcgis.com/datasets/DAERANI::river-basin-districts.zip?outSR=%7B%22latestWkid%22%3A29902%2C%22wkid%22%3A29900%7D')
+basins.geometry = basins.geometry.to_crs('4326')
+basins["colour"] = colours[1:]
+gdf = gdf.sjoin(basins, how='left')
+gdf["colour"] = gdf["colour"].apply(lambda x: colours[0] if x is np.nan else x)
 
 # %%
 view_state = pdk.ViewState(latitude=54.78, longitude=-6.49, zoom=7)
@@ -27,16 +34,17 @@ layer = pdk.Layer(
     data=gdf,
     pickable=True,
     get_color="colour",
-    width_scale=20,
-    width_min_pixels=2,
+    width_scale=200,
+    width_min_pixels=1,
     get_path="plotstrings",
-    get_width=5,
-    tooltip=True
+    get_width="strahler",
+    tooltip=False
 )
 
 r = pdk.Deck(
     layers=[layer], 
     initial_view_state=view_state,
-    map_style='light')
+    map_style=None)
 
-r.to_html("path_layer.html")
+r
+
