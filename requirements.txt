@@ -1,0 +1,4 @@
+pydeck
+requests
+pandas
+geopandas
