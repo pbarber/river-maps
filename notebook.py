@@ -2,6 +2,7 @@
 import pydeck as pdk
 import geopandas as gpd
 import numpy as np
+import met_brewer
 
 def extract_coord_lists(x):
     if x.type == 'MultiLineString':
@@ -12,9 +13,7 @@ def extract_coord_lists(x):
         raise Exception('Unknown type {x.type}')
 
 # %% Colour schemes from RMetBrewer
-Egypt =  [(221, 82, 41), (53, 122, 62), (81, 179, 132), (243, 179, 84)]
-Hokusai3 = [(217, 219, 122), (117, 200, 195), (43, 82, 132), (15, 44, 87)]
-colours = Hokusai3
+colours = [(int(c[1:3], 16), int(c[3:5], 16), int(c[5:], 16)) for c in met_brewer.met_brew('Derain')]
 
 # %%
 gdf = gpd.read_file('https://opendata-daerani.hub.arcgis.com/datasets/DAERANI::rivers-strahler-ranking.zip?outSR=%7B%22latestWkid%22%3A29902%2C%22wkid%22%3A29900%7D')
@@ -22,7 +21,7 @@ gdf.geometry = gdf.geometry.to_crs('4326')
 gdf['plotstrings'] = gdf.geometry.apply(extract_coord_lists)
 basins = gpd.read_file('https://opendata-daerani.hub.arcgis.com/datasets/DAERANI::river-basin-districts.zip?outSR=%7B%22latestWkid%22%3A29902%2C%22wkid%22%3A29900%7D')
 basins.geometry = basins.geometry.to_crs('4326')
-basins["colour"] = colours[1:]
+basins["colour"] = colours[1:4]
 gdf = gdf.sjoin(basins, how='left')
 gdf["colour"] = gdf["colour"].apply(lambda x: colours[0] if x is np.nan else x)
 
