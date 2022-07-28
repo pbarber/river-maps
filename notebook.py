@@ -7,8 +7,8 @@ import met_brewer
 def extract_coord_lists(x):
     if x.type == 'MultiLineString':
 #        return list([(y[0],y[1]) for y in x[0].coords])
-        if len(x) == 1:
-            return list([(y[0],y[1]) for y in x[0].coords])
+        if len(x.geoms) == 1:
+            return list([(y[0],y[1]) for y in x.geoms[0].coords])
         else:
             return [list([(y[0],y[1]) for y in line.coords]) for line in x]
     elif x.type == 'LineString':
@@ -78,21 +78,23 @@ r = pdk.Deck(
     initial_view_state=view_state,
     map_style='light')
 
-r.to_html('test.html')
+r
 
 
 # %%
 eu = gpd.read_file('HydroRIVERS_v10_eu.gdb.zip', bbox=(-10.56,51.39,-5.34,55.43))
 eu['plotstrings'] = eu.geometry.apply(extract_coord_lists)
-eu["colour"] = ""
-eu["colour"] = eu["colour"].apply(lambda x: colours[0] if x == ""  else x)
+eubas = gpd.read_file('hybas_eu_lev06_v1c.zip', bbox=(-10.56,51.39,-5.34,55.43))
+eubas["colour"] = colours[1:] + colours[1:6]
+eugdf = eu.sjoin(eubas, how='left')
+eugdf["colour"] = eugdf["colour"].apply(lambda x: colours[0] if x is np.nan else x)
 
 # %%
-view_state = pdk.ViewState(latitude=54.78, longitude=-6.49, zoom=7)
+view_state = pdk.ViewState(latitude=53.45, longitude=-6.49, zoom=5.7)
 
 layer = pdk.Layer(
     type="PathLayer",
-    data=eu,
+    data=eugdf,
     pickable=True,
     get_color="colour",
     width_scale=200,
@@ -105,7 +107,6 @@ layer = pdk.Layer(
 r = pdk.Deck(
     layers=[layer], 
     initial_view_state=view_state,
-    map_style='light')
+    map_style=None)
 
-r.to_html('test.html')
-
+r
