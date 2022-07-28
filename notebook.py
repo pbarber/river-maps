@@ -85,7 +85,6 @@ r.to_html('test.html')
 eu = gpd.read_file('HydroRIVERS_v10_eu.gdb.zip', bbox=(-10.56,51.39,-5.34,55.43))
 eu['plotstrings'] = eu.geometry.apply(extract_coord_lists)
 eu["colour"] = ""
-eu["width"] = 0.5
 eu["colour"] = eu["colour"].apply(lambda x: colours[0] if x == ""  else x)
 
 # %%
@@ -93,10 +92,10 @@ view_state = pdk.ViewState(latitude=54.78, longitude=-6.49, zoom=7)
 
 layer = pdk.Layer(
     type="PathLayer",
-    data=eu.head(3),
+    data=eu,
     pickable=True,
     get_color="colour",
-    width_scale=2000,
+    width_scale=200,
     width_min_pixels=1,
     get_path="plotstrings",
     get_width="ORD_STRA",
