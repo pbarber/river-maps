@@ -4,3 +4,4 @@ pandas
 geopandas
 rtree
 git+https://github.com/BlakeRMills/MetBrewer.git#subdirectory=Python
+topojson

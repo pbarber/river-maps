@@ -2,7 +2,9 @@
 import pydeck as pdk
 import geopandas as gpd
 import numpy as np
+import topojson as tp
 import met_brewer
+import requests
 
 def extract_coord_lists(x):
     if x.type == 'MultiLineString':
@@ -10,7 +12,7 @@ def extract_coord_lists(x):
         if len(x.geoms) == 1:
             return list([(y[0],y[1]) for y in x.geoms[0].coords])
         else:
-            return [list([(y[0],y[1]) for y in line.coords]) for line in x]
+            return [list([(y[0],y[1]) for y in line.coords]) for line in x.geoms]
     elif x.type == 'LineString':
         return list([(y[0],y[1]) for y in x.coords])
     else:
@@ -18,6 +20,17 @@ def extract_coord_lists(x):
 
 # Colour schemes from RMetBrewer
 colours = [(int(c[1:3], 16), int(c[3:5], 16), int(c[5:], 16)) for c in met_brewer.met_brew('Derain')]
+
+def download_file_if_not_exists(url, fname=None):
+    if fname is None:
+        fname = os.path.basename(url)
+    if not os.path.isfile(fname):
+        session = requests.Session()
+        with session.get(url, stream=True) as stream:
+            stream.raise_for_status()
+            with open(fname, 'wb') as f:
+                for chunk in stream.iter_content(chunk_size=8192): 
+                    f.write(chunk)
 
 # %%
 gdf = gpd.read_file('https://opendata-daerani.hub.arcgis.com/datasets/DAERANI::rivers-strahler-ranking.zip?outSR=%7B%22latestWkid%22%3A29902%2C%22wkid%22%3A29900%7D')
@@ -30,7 +43,7 @@ gdf = gdf.sjoin(basins, how='left')
 gdf["colour"] = gdf["colour"].apply(lambda x: colours[0] if x is np.nan else x)
 
 # %%
-view_state = pdk.ViewState(latitude=54.78, longitude=-6.49, zoom=7)
+view_state = pdk.ViewState(latitude=53.45, longitude=-6.49, zoom=5.7)
 
 layer = pdk.Layer(
     type="PathLayer",
@@ -82,9 +95,24 @@ r
 
 
 # %%
+download_file_if_not_exists('http://osni-spatialni.opendata.arcgis.com/datasets/159c80fe1ad54140b429f8799f624962_0.zip', 'NI_land_area.zip')
+niboundary = gpd.read_file('NI_land_area.zip')
+niboundary.geometry = niboundary.simplify(tolerance=0.01)
+download_file_if_not_exists('https://opendata.arcgis.com/api/v3/datasets/559bc3300384413aa0fe93f0772cb7f1_0/downloads/data?format=shp&spatialRefId=2157&where=1%3D1', 'ROI_provinces.zip')
+roiprovinces = gpd.read_file('ROI_provinces.zip')
+roiprovinces = roiprovinces.to_crs('EPSG:4326')
+topo = tp.Topology(roiprovinces, prequantize=False)
+roiprovinces = topo.toposimplify(0.01).to_gdf()
+roiprovinces = roiprovinces.set_crs('EPSG:4326')
+coastline = roiprovinces.overlay(niboundary, how='union').unary_union
+
+# %%
+download_file_if_not_exists('https://data.hydrosheds.org/file/HydroRIVERS/HydroRIVERS_v10_eu.gdb.zip')
+download_file_if_not_exists('https://data.hydrosheds.org/file/hydrobasins/standard/hybas_eu_lev01-12_v1c.zip')
 eu = gpd.read_file('HydroRIVERS_v10_eu.gdb.zip', bbox=(-10.56,51.39,-5.34,55.43))
+#eu = eu[eu.intersects(coastline)==True]
 eu['plotstrings'] = eu.geometry.apply(extract_coord_lists)
-eubas = gpd.read_file('hybas_eu_lev06_v1c.zip', bbox=(-10.56,51.39,-5.34,55.43))
+eubas = gpd.read_file('hybas_eu_lev01-12_v1c.zip', layer='hybas_eu_lev06_v1c', bbox=(-10.56,51.39,-5.34,55.43))
 eubas["colour"] = colours[1:] + colours[1:6]
 eugdf = eu.sjoin(eubas, how='left')
 eugdf["colour"] = eugdf["colour"].apply(lambda x: colours[0] if x is np.nan else x)
