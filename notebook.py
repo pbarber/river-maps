@@ -1,6 +1,7 @@
 # %%
 import pydeck as pdk
 import geopandas as gpd
+from shapely.geometry import Polygon
 import numpy as np
 import topojson as tp
 import met_brewer
@@ -106,15 +107,25 @@ roiprovinces = topo.toposimplify(0.01).to_gdf()
 roiprovinces = roiprovinces.set_crs('EPSG:4326')
 coastline = roiprovinces.overlay(niboundary, how='union').unary_union
 
-# %%
+# %% Hydrorivers and Hydrobasins
+# Get Hydrorivers data for Ireland and cut off the Scotland area of the bounding box
 download_file_if_not_exists('https://data.hydrosheds.org/file/HydroRIVERS/HydroRIVERS_v10_eu.gdb.zip')
-download_file_if_not_exists('https://data.hydrosheds.org/file/hydrobasins/standard/hybas_eu_lev01-12_v1c.zip')
 eu = gpd.read_file('HydroRIVERS_v10_eu.gdb.zip', bbox=(-10.56,51.39,-5.34,55.43))
-#eu = eu[eu.intersects(coastline)==True]
-eu['plotstrings'] = eu.geometry.apply(extract_coord_lists)
+eu = eu[~eu.intersects(Polygon([
+    (-5.34, 55.43), 
+    (-5.85, 55.43), 
+    (-5.85, 55.23), 
+    (-5.34, 55.23)
+    ]
+))]
+eu['plotstrings'] = eu.geometry.apply(extract_coord_lists) # Convert to pydeck friendly format
+download_file_if_not_exists('https://data.hydrosheds.org/file/hydrobasins/standard/hybas_eu_lev01-12_v1c.zip')
+# Get Hydrobasins data for Ireland and apply colours
 eubas = gpd.read_file('hybas_eu_lev01-12_v1c.zip', layer='hybas_eu_lev06_v1c', bbox=(-10.56,51.39,-5.34,55.43))
 eubas["colour"] = colours[1:] + colours[1:6]
+# Spatial join of rivers to basins
 eugdf = eu.sjoin(eubas, how='left')
+# Add colour for any rivers not in basins
 eugdf["colour"] = eugdf["colour"].apply(lambda x: colours[0] if x is np.nan else x)
 
 # %%
