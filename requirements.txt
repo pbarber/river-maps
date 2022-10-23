@@ -5,3 +5,6 @@ geopandas
 rtree
 git+https://github.com/BlakeRMills/MetBrewer.git#subdirectory=Python
 topojson
+altair
+altair_saver
+selenium
