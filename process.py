@@ -1,5 +1,4 @@
 from genericpath import isfile
-import pydeck as pdk
 import geopandas as gpd
 from shapely.geometry import Polygon
 import numpy as np
@@ -56,7 +55,7 @@ def get_chrome_driver():
     options.add_argument("--remote-debugging-port=9222")
     options.add_argument("--log-path=/tmp/chromium.log")
     options.add_argument("--autoplay-policy=no-user-gesture-required")
-    options.add_argument("--ni-first-run")
+    options.add_argument("--no-first-run")
     options.add_argument("--disable-sync")
     driver = None
     for attempt in range(3):
@@ -106,7 +105,3 @@ if __name__ == '__main__':
         # Add colour for any rivers not in basins
         eugdf["colour"] = eugdf["colour"].apply(lambda x: colours[0] if x is np.nan else x)
         eubas["hexcolour"] = eugdf["hexcolour"].apply(lambda x: met_brewer.met_brew(args.colours)[0] if x is np.nan else x)
-
-
-
-
