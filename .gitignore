@@ -2,3 +2,7 @@ __pycache__
 .DS_Store
 *.log
 *.zip
+*.html
+*.png
+*.svg
+*.json
