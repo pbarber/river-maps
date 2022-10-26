@@ -10,7 +10,9 @@ RUN apk add openssh netcat-openbsd \
  && sed -i 's/\#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 EXPOSE 22
 
-RUN apk add git build-base binutils linux-headers
+RUN ssh-keygen -A
+
+RUN apk add git build-base binutils linux-headers libffi-dev
 RUN apk add proj proj-dev proj-util gdal gdal-dev
 RUN apk add chromium chromium-chromedriver
 
@@ -19,8 +21,6 @@ RUN pip install -r requirements.txt
 
 COPY requirements-dev.txt /usr/src/app/
 RUN pip install -r requirements-dev.txt
-
-RUN ssh-keygen -A
 
 #RUN apt-get install -y xvfb
 

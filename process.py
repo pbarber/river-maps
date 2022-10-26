@@ -9,6 +9,8 @@ import os.path
 from selenium import webdriver
 import logging
 import argparse
+import altair as alt
+alt.data_transformers.disable_max_rows()
 
 def extract_coord_lists(x):
     if x.type == 'MultiLineString':
@@ -105,3 +107,23 @@ if __name__ == '__main__':
         # Add colour for any rivers not in basins
         eugdf["colour"] = eugdf["colour"].apply(lambda x: colours[0] if x is np.nan else x)
         eubas["hexcolour"] = eugdf["hexcolour"].apply(lambda x: met_brewer.met_brew(args.colours)[0] if x is np.nan else x)
+
+        eugdf['linewidth'] = eugdf['ORD_STRA']/3
+
+        lines = alt.Chart(eugdf).mark_geoshape(
+            filled=False,
+        ).encode(
+            strokeWidth=alt.StrokeWidth(
+                "linewidth",
+                legend=None
+            ),
+            color=alt.Color(
+                "hexcolour", 
+                scale=None
+            )
+        ).properties(
+            height = 1300,
+            width = 1000
+        )
+
+        lines.save('test.png', format='png', method='selenium', webdriver=driver)

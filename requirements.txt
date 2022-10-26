@@ -6,4 +6,4 @@ git+https://github.com/BlakeRMills/MetBrewer.git#subdirectory=Python
 topojson
 altair
 altair_saver
-selenium
+selenium==4.2.0
