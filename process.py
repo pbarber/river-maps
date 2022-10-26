@@ -34,7 +34,7 @@ if __name__ == '__main__':
     hexcolours = met_brewer.met_brew(args.colours)
     # Get Hydrobasins data for Ireland and apply colours
     eubas = gpd.read_file('hybas_eu_lev01-12_v1c.zip', layer='hybas_eu_lev06_v1c', bbox=(-10.56,51.39,-5.34,55.43))
-    logging.error('Colouring {basins} basins with {colours} colours'.format(basins = len(eubas), colours = len(hexcolours)))
+    logging.info('Colouring {basins} basins with {colours} colours'.format(basins = len(eubas), colours = len(hexcolours)))
     colourcycle = cycle(hexcolours[1:])
     eubas["hexcolour"] = [next(colourcycle)for i in range(len(eubas))]
 
@@ -114,13 +114,24 @@ if __name__ == '__main__':
 
     if 'ROI' in args.maps:
         download_file_if_not_exists('http://gis.epa.ie/geoserver/EPA/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=EPA:WATER_RIVNETROUTES&outputFormat=application%2Fjson&srsName=EPSG:4326', 'roi-river-netroutes.json')
-        ie = gpd.read_file('roi-river-netroutes.json')
-        ie.geometry = ie.geometry.to_crs('4326')
-        ie['linewidth'] = ie.ORDER_ / 3
+        roirivers = gpd.read_file('roi-river-netroutes.json')
+        roirivers.geometry = roirivers.geometry.to_crs('4326')
+        roirivers['linewidth'] = roirivers.ORDER_ / 3
+        roirivers = roirivers.sjoin(eubas, how='left')
 
-        ie = ie.sjoin(eubas, how='left')
+        download_file_if_not_exists('https://opendata.arcgis.com/api/v3/datasets/0081128602fa45f49fe4f56e159040b3_0/downloads/data?format=geojson&spatialRefId=4326&where=1%3D1', 'Lakes_&_Reservoirs_-_OSi_National_250k_Map_Of_Ireland.geojson')
+        roilakes = gpd.read_file('Lakes_&_Reservoirs_-_OSi_National_250k_Map_Of_Ireland.geojson')
+        roilakes.geometry = roilakes.geometry.to_crs('4326')
+        roilakes = roilakes.sjoin(eubas, how='left')
 
-        roilines = alt.Chart(ie).mark_geoshape(
+        roiareas = alt.Chart(roilakes).mark_geoshape().encode(
+            color=alt.Color(
+                "hexcolour", 
+                scale=None
+            )
+        )
+
+        roilines = alt.Chart(roirivers).mark_geoshape(
             filled=False,
         ).encode(
             strokeWidth=alt.StrokeWidth(
@@ -136,7 +147,7 @@ if __name__ == '__main__':
             width = 1000
         )
 
-        save(roilines, 'roi_rivers.html', format='html')
+        save(roiareas + roilines, 'roi_rivers_lakes.html', format='html')
 
     if 'ROI' in args.maps and 'NI' in args.maps:
-        save(niareas + nilines + roilines, 'ie_rivers_lakes.html', format='html')
+        save(niareas + roiareas + nilines + roilines, 'ie_rivers_lakes.html', format='html')
