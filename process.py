@@ -92,7 +92,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Colour schemes from RMetBrewer
-    colours = [(int(c[1:3], 16), int(c[3:5], 16), int(c[5:], 16)) for c in met_brewer.met_brew(args.colours)]
+    hexcolours = met_brewer.met_brew(args.colours)
+    # Get Hydrobasins data for Ireland and apply colours
+    eubas = gpd.read_file('hybas_eu_lev01-12_v1c.zip', layer='hybas_eu_lev06_v1c', bbox=(-10.56,51.39,-5.34,55.43))
+    eubas["hexcolour"] = hexcolours[1:] + hexcolours[1:6]
 
     if 'Hydro' in args.maps:
         # Get Hydrorivers data for Ireland and cut off the Scotland area of the bounding box
@@ -106,15 +109,10 @@ if __name__ == '__main__':
             ]
         ))]
         download_file_if_not_exists('https://data.hydrosheds.org/file/hydrobasins/standard/hybas_eu_lev01-12_v1c.zip')
-        # Get Hydrobasins data for Ireland and apply colours
-        eubas = gpd.read_file('hybas_eu_lev01-12_v1c.zip', layer='hybas_eu_lev06_v1c', bbox=(-10.56,51.39,-5.34,55.43))
-        eubas["colour"] = colours[1:] + colours[1:6]
-        eubas["hexcolour"] = met_brewer.met_brew(args.colours)[1:] + met_brewer.met_brew(args.colours)[1:6]
         # Spatial join of rivers to basins
         eugdf = eu.sjoin(eubas, how='left')
         # Add colour for any rivers not in basins
-        eugdf["colour"] = eugdf["colour"].apply(lambda x: colours[0] if x is np.nan else x)
-        eubas["hexcolour"] = eugdf["hexcolour"].apply(lambda x: met_brewer.met_brew(args.colours)[0] if x is np.nan else x)
+        eugdf["hexcolour"] = eugdf["hexcolour"].apply(lambda x: hexcolours[0] if x is np.nan else x)
 
         eugdf['linewidth'] = eugdf['ORD_STRA']/3
 
@@ -138,27 +136,40 @@ if __name__ == '__main__':
 
     if 'NI' in args.maps:
         download_file_if_not_exists('https://opendata-daerani.hub.arcgis.com/datasets/DAERANI::rivers-strahler-ranking.zip?outSR=%7B%22latestWkid%22%3A29902%2C%22wkid%22%3A29900%7D', 'ni-rivers-strahler-ranking.zip')
-        gdf = gpd.read_file('ni-rivers-strahler-ranking.zip')
-        gdf.geometry = gdf.geometry.to_crs('4326')
-        gdf['linewidth'] = gdf.strahler / 3
+        nirivers = gpd.read_file('ni-rivers-strahler-ranking.zip')
+        nirivers.geometry = nirivers.geometry.to_crs('4326')
+        nirivers['linewidth'] = nirivers.strahler / 3
+        nirivers = nirivers.sjoin(eubas, how='left')
 
-        lines = alt.Chart(gdf).mark_geoshape(
+        download_file_if_not_exists('https://opendata-daerani.hub.arcgis.com/datasets/DAERANI::lake-water-bodies.geojson?outSR=%7B%22latestWkid%22%3A29902%2C%22wkid%22%3A29900%7D', 'ni-lake-water-bodies.geojson')
+        nilakes = gpd.read_file('ni-lake-water-bodies.geojson')
+        nilakes.geometry = nilakes.geometry.to_crs('4326')
+        nilakes = nilakes.sjoin(eubas, how='left')
+
+        areas = alt.Chart(nilakes).mark_geoshape().encode(
+            color=alt.Color(
+                "hexcolour", 
+                scale=None
+            )
+        )
+
+        lines = alt.Chart(nirivers).mark_geoshape(
             filled=False,
         ).encode(
             strokeWidth=alt.StrokeWidth(
                 "linewidth",
                 legend=None
             ),
-#            color=alt.Color(
-#                "hexcolour", 
-#                scale=None
-#            )
+            color=alt.Color(
+                "hexcolour", 
+                scale=None
+            )
         ).properties(
             height = 1300,
             width = 1000
         )
 
-        save(lines, 'ni_rivers.html', format='html')
+        save(areas + lines, 'ni_rivers_lakes.html', format='html')
 
     if 'ROI' in args.maps:
         download_file_if_not_exists('http://gis.epa.ie/geoserver/EPA/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=EPA:WATER_RIVNETROUTES&outputFormat=application%2Fjson&srsName=EPSG:4326', 'roi-river-netroutes.json')
@@ -170,6 +181,8 @@ if __name__ == '__main__':
         roisimplify = roisimplify.set_crs('EPSG:4326')
         roisimplify['linewidth'] = roisimplify.ORDER_ / 3
 
+        roisimplify = roisimplify.sjoin(eubas, how='left')
+
         lines = alt.Chart(roisimplify).mark_geoshape(
             filled=False,
         ).encode(
@@ -177,10 +190,10 @@ if __name__ == '__main__':
                 "linewidth",
                 legend=None
             ),
-#            color=alt.Color(
-#                "hexcolour", 
-#                scale=None
-#            )
+            color=alt.Color(
+                "hexcolour", 
+                scale=None
+            )
         ).properties(
             height = 1300,
             width = 1000
