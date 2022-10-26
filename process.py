@@ -146,14 +146,14 @@ if __name__ == '__main__':
         nilakes.geometry = nilakes.geometry.to_crs('4326')
         nilakes = nilakes.sjoin(eubas, how='left')
 
-        areas = alt.Chart(nilakes).mark_geoshape().encode(
+        niareas = alt.Chart(nilakes).mark_geoshape().encode(
             color=alt.Color(
                 "hexcolour", 
                 scale=None
             )
         )
 
-        lines = alt.Chart(nirivers).mark_geoshape(
+        nilines = alt.Chart(nirivers).mark_geoshape(
             filled=False,
         ).encode(
             strokeWidth=alt.StrokeWidth(
@@ -169,21 +169,18 @@ if __name__ == '__main__':
             width = 1000
         )
 
-        save(areas + lines, 'ni_rivers_lakes.html', format='html')
+        save(niareas + nilines, 'ni_rivers_lakes.html', format='html')
 
     if 'ROI' in args.maps:
         download_file_if_not_exists('http://gis.epa.ie/geoserver/EPA/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=EPA:WATER_RIVNETROUTES&outputFormat=application%2Fjson&srsName=EPSG:4326', 'roi-river-netroutes.json')
         ie = gpd.read_file('roi-river-netroutes.json')
         ie.geometry = ie.geometry.to_crs('4326')
-        ie.geometry = ie.geometry.apply(lambda x: remove_third_dimension(x))
-        topo = tp.Topology(ie, prequantize=False)
-        roisimplify = topo.toposimplify(0.01).to_gdf()
-        roisimplify = roisimplify.set_crs('EPSG:4326')
-        roisimplify['linewidth'] = roisimplify.ORDER_ / 3
+#        ie.geometry = ie.geometry.apply(lambda x: remove_third_dimension(x))
+        ie['linewidth'] = ie.ORDER_ / 3
 
-        roisimplify = roisimplify.sjoin(eubas, how='left')
+        ie = ie.sjoin(eubas, how='left')
 
-        lines = alt.Chart(roisimplify).mark_geoshape(
+        roilines = alt.Chart(ie).mark_geoshape(
             filled=False,
         ).encode(
             strokeWidth=alt.StrokeWidth(
@@ -201,4 +198,7 @@ if __name__ == '__main__':
 
         print('Created plot')
 
-        save(lines, 'ie_rivers.html', format='html')
+        save(roilines, 'roi_rivers.html', format='html')
+
+    if 'ROI' in args.maps and 'NI' in args.maps:
+        save(niareas + nilines + roilines, 'ie_rivers_lakes.html', format='html')
