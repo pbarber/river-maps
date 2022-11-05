@@ -26,7 +26,7 @@ def download_file_if_not_exists(url, fname=None):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Create river map of the island of Ireland.')
-    parser.add_argument('--colours', help='RMetBrewer colour scheme', default='Derain')
+    parser.add_argument('--colours', help='RMetBrewer colour scheme (colourblind safe)', default='Derain', choices=met_brewer.COLORBLIND_PALETTES_NAMES)
     parser.add_argument('--maps', help='Choose maps to create', nargs='+', default=['Hydro', 'NI', 'ROI'])
     args = parser.parse_args()
 
@@ -70,7 +70,8 @@ if __name__ == '__main__':
             )
         ).properties(
             height = 1300,
-            width = 1000
+            width = 1000,
+            background = '#000000'
         )
 
         save(lines, 'hydrorivers_hydrobasins.html', format='html')
