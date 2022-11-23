@@ -76,10 +76,28 @@ if __name__ == '__main__':
                     "hexcolour", 
                     scale=None
                 )
+            ).configure_view(
+                strokeWidth=0
             ).properties(
                 height = 1300,
                 width = 1000,
-                background = '#000000'
+                background = '#000000',
+                title=alt.TitleParams(
+                    text="Ireland's river basins",
+                    subtitle=['Based on HydroRivers and HydroBasins datasets','Created by Paul Barber'],
+                    baseline='bottom',
+                    orient='bottom',
+                    anchor='end',
+                    font='Optima',
+                    fontWeight='bold',
+                    fontSize=40,
+                    dy=-100,
+                    color='#fff',
+                    subtitleColor='#fff',
+                    subtitleFont='Optima',
+                    subtitleFontSize=24,
+                    subtitleFontWeight='normal',
+                ),
             )
 
             save(lines, f'hydrorivers_hydrobasins-{colour}-{args.basinlevel}.html', format='html')
@@ -108,15 +126,11 @@ if __name__ == '__main__':
             nirivers.geometry = nirivers.geometry.to_crs('4326')
             nirivers['linewidth'] = nirivers.strahler.pow(args.strahlerpower)
             nirivers = nirivers.sjoin(eubas, how='left')
-            if 'Border' in args.maps:
-                nirivers = nirivers.clip(buffer)
 
             download_file_if_not_exists('https://opendata-daerani.hub.arcgis.com/datasets/DAERANI::lake-water-bodies.geojson?outSR=%7B%22latestWkid%22%3A29902%2C%22wkid%22%3A29900%7D', 'ni-lake-water-bodies.geojson')
             nilakes = gpd.read_file('ni-lake-water-bodies.geojson')
             nilakes.geometry = nilakes.geometry.to_crs('4326')
             nilakes = nilakes.sjoin(eubas, how='left')
-            if 'Border' in args.maps:
-                nilakes = nilakes.clip(buffer)
 
             niareas = alt.Chart(nilakes).mark_geoshape().encode(
                 color=alt.Color(
@@ -141,7 +155,28 @@ if __name__ == '__main__':
                 width = 1000
             )
 
-            ni = alt.layer(niareas, nilines).properties(background='#000')
+            ni = alt.layer(niareas, nilines).configure_view(
+                strokeWidth=0
+            ).properties(
+                background = '#000000',
+                title=alt.TitleParams(
+                    text="Northern Ireland's river basins",
+                    subtitle=['Based on DAERA and HydroBasins datasets','Created by Paul Barber'],
+                    baseline='bottom',
+                    orient='bottom',
+                    anchor='end',
+                    font='Optima',
+                    fontWeight='bold',
+                    fontSize=40,
+                    dy=-100,
+                    color='#fff',
+                    subtitleColor='#fff',
+                    subtitleFont='Optima',
+                    subtitleFontSize=24,
+                    subtitleFontWeight='normal',
+                ),
+            )
+
             save(ni, f'ni_rivers_lakes-{colour}-{args.basinlevel}.html', format='html')
 
         if 'ROI' in args.maps:
@@ -150,15 +185,11 @@ if __name__ == '__main__':
             roirivers.geometry = roirivers.geometry.to_crs('4326')
             roirivers['linewidth'] = roirivers.ORDER_.pow(args.strahlerpower)
             roirivers = roirivers.sjoin(eubas, how='left')
-            if 'Border' in args.maps:
-                roirivers = roirivers.clip(buffer)
 
             download_file_if_not_exists('https://opendata.arcgis.com/api/v3/datasets/0081128602fa45f49fe4f56e159040b3_0/downloads/data?format=geojson&spatialRefId=4326&where=1%3D1', 'Lakes_&_Reservoirs_-_OSi_National_250k_Map_Of_Ireland.geojson')
             roilakes = gpd.read_file('Lakes_&_Reservoirs_-_OSi_National_250k_Map_Of_Ireland.geojson')
             roilakes.geometry = roilakes.geometry.to_crs('4326')
             roilakes = roilakes.sjoin(eubas, how='left')
-            if 'Border' in args.maps:
-                roilakes = roilakes.clip(buffer)
 
             roiareas = alt.Chart(roilakes).mark_geoshape().encode(
                 color=alt.Color(
@@ -183,9 +214,59 @@ if __name__ == '__main__':
                 width = 1000
             )
 
-            roi = alt.layer(roiareas, roilines).properties(background='#000')
+            roi = alt.layer(roiareas, roilines).configure_view(
+                strokeWidth=0
+            ).properties(
+                background = '#000000',
+                title=alt.TitleParams(
+                    text="Republic of Ireland's river basins",
+                    subtitle=['Based on EPA, OSi and HydroBasins datasets','Created by Paul Barber'],
+                    baseline='bottom',
+                    orient='bottom',
+                    anchor='end',
+                    font='Optima',
+                    fontWeight='bold',
+                    fontSize=40,
+                    dy=-100,
+                    color='#fff',
+                    subtitleColor='#fff',
+                    subtitleFont='Optima',
+                    subtitleFontSize=24,
+                    subtitleFontWeight='normal',
+                ),
+            )
             save(roi, f'roi_rivers_lakes-{colour}-{args.basinlevel}.html', format='html')
 
         if 'ROI' in args.maps and 'NI' in args.maps:
-            ie = alt.layer(niareas, roiareas, nilines, roilines).properties(background='#000')
-            save(ie, f'ie_rivers_lakes-{colour}-{args.basinlevel}.html', format='html')
+            if 'Border' in args.maps:
+                title = 'Rivers around NI/ROI border'
+                fname = f'border_rivers_lakes-{colour}-{args.basinlevel}.html'
+                nirivers = nirivers.clip(buffer)
+                nilakes = nilakes.clip(buffer)
+                roirivers = roirivers.clip(buffer)
+                roilakes = roilakes.clip(buffer)
+            else:
+                title = "Ireland's river basins"
+                fname = f'ie_rivers_lakes-{colour}-{args.basinlevel}.html'
+            ie = alt.layer(niareas, roiareas, nilines, roilines).configure_view(
+                strokeWidth=0
+            ).properties(
+                background = '#000000',
+                title=alt.TitleParams(
+                    text=title,
+                    subtitle=['Based on DAERA, EPA, OSi and HydroBasins datasets','Created by Paul Barber'],
+                    baseline='bottom',
+                    orient='bottom',
+                    anchor='end',
+                    font='Optima',
+                    fontWeight='bold',
+                    fontSize=40,
+                    dy=-100,
+                    color='#fff',
+                    subtitleColor='#fff',
+                    subtitleFont='Optima',
+                    subtitleFontSize=24,
+                    subtitleFontWeight='normal',
+                ),
+            )
+            save(ie, fname, format='html')
