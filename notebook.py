@@ -36,13 +36,13 @@ def download_file_if_not_exists(url, fname=None):
                 for chunk in stream.iter_content(chunk_size=8192): 
                     f.write(chunk)
 # TODO:
-# 1. export image from pydeck, make sure that it is high quality and zoom works well, if not move to matplotlib (and check if altair is suitable)
-# 2. choose colours and basin level for all-Ireland basins map (from HydroRivers and more detail from NI/IE), NI basins map and IE basins map
-# 3. identify the land border
-# 4. create a dataset which is rivers crossing the land border (spatial join all rivers within 10k of border, or better those crossing the border limited to only points within 10k of border)
-# 5. choose colours and export the border crossing dataset
-# 6. write up text for tweet and linkedin and publish
-# 7. Cheshire version using the HydroRivers data (or maybe England data if any available)
+# 1. [x] export image from pydeck, make sure that it is high quality and zoom works well, if not move to matplotlib (and check if altair is suitable)
+# 2. [x] choose colours and basin level for all-Ireland basins map (from HydroRivers and more detail from NI/IE), NI basins map and IE basins map
+# 3. [x] identify the land border
+# 4. [x] create a dataset which is rivers crossing the land border (spatial join all rivers within 10k of border, or better those crossing the border limited to only points within 10k of border)
+# 5. [ ] choose colours and export the border crossing dataset, add titles/subtitles
+# 6. [ ] write up text for tweet and linkedin and publish
+# 7. [ ] Cheshire version using the HydroRivers data (or maybe England data if any available)
 #
 # Altair [example](https://altair-viz.github.io/gallery/london_tube.html)
 # %%
