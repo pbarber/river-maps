@@ -26,9 +26,11 @@ def download_file_if_not_exists(url, fname=None):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Create river map of the island of Ireland.')
-    parser.add_argument('--colours', help='RMetBrewer colour scheme (colourblind safe)', default='Derain', choices=met_brewer.COLORBLIND_PALETTES_NAMES)
+    parser.add_argument('--colours', help='RMetBrewer colour scheme (colourblind safe)', default='Hokusai2', choices=met_brewer.COLORBLIND_PALETTES_NAMES)
     parser.add_argument('--allcolours', help='Try all colour themes', default=False, action='store_true')
-    parser.add_argument('--maps', help='Choose maps to create', nargs='+', default=['Hydro', 'NI', 'ROI'])
+    parser.add_argument('--maps', help='Choose maps to create', nargs='+', default=['Hydro', 'NI', 'ROI'], choices=['Hydro', 'NI', 'ROI', 'Border'])
+    parser.add_argument('--basinlevel', help='Basin level to use', default=7, type=int, choices=range(1,10))
+    parser.add_argument('--strahlerpower', help='Exponential to use when calculating line width from Strahler level', default=0.5, type=float)
     args = parser.parse_args()
 
     if args.allcolours is True:
@@ -39,7 +41,7 @@ if __name__ == '__main__':
         # Colour schemes from RMetBrewer
         hexcolours = met_brewer.met_brew(colour)
         # Get Hydrobasins data for Ireland and apply colours
-        eubas = gpd.read_file('hybas_eu_lev01-12_v1c.zip', layer='hybas_eu_lev06_v1c', bbox=(-10.56,51.39,-5.34,55.43))
+        eubas = gpd.read_file('hybas_eu_lev01-12_v1c.zip', layer=f'hybas_eu_lev0{args.basinlevel}_v1c', bbox=(-10.56,51.39,-5.34,55.43))
         logging.info('Colouring {basins} basins with {colours} colours'.format(basins = len(eubas), colours = len(hexcolours)))
         colourcycle = cycle(hexcolours[1:])
         eubas["hexcolour"] = [next(colourcycle)for i in range(len(eubas))]
@@ -61,7 +63,7 @@ if __name__ == '__main__':
             # Add colour for any rivers not in basins
             eugdf["hexcolour"] = eugdf["hexcolour"].apply(lambda x: hexcolours[0] if x is np.nan else x)
 
-            eugdf['linewidth'] = eugdf['ORD_STRA']/3
+            eugdf['linewidth'] = eugdf['ORD_STRA'].pow(args.strahlerpower)
 
             lines = alt.Chart(eugdf).mark_geoshape(
                 filled=False,
@@ -80,19 +82,41 @@ if __name__ == '__main__':
                 background = '#000000'
             )
 
-            save(lines, f'hydrorivers_hydrobasins-{colour}.html', format='html')
+            save(lines, f'hydrorivers_hydrobasins-{colour}-{args.basinlevel}.html', format='html')
+
+        if 'Border' in args.maps:
+            download_file_if_not_exists('https://opendata.arcgis.com/api/v3/datasets/577487bb7ce94c76b5a7a5f6c29e6ee9_0/downloads/data?format=shp&spatialRefId=2157&where=1%3D1', 'ROI_landmask.zip')
+            roioutline = gpd.read_file('ROI_landmask.zip')
+            roioutline.geometry = roioutline.geometry.to_crs('4326')
+            download_file_if_not_exists('http://osni-spatialni.opendata.arcgis.com/datasets/159c80fe1ad54140b429f8799f624962_0.zip', 'NI_land_area.zip')
+            niboundary = gpd.read_file('NI_land_area.zip')
+            niboundary.geometry = niboundary.geometry.to_crs('4326')
+            # Extend the NI boundary by 0.015 units
+            niboundary['geometry'] = niboundary.buffer(0.015)
+            bbox = box(-8.415527,-5.605774,53.998083,55.152197)
+            # Identify ROI border within the extended NI boundary, and apply a bounding box to remove point where
+            # boundaries get too close
+            border = gpd.clip(roioutline.boundary.clip(niboundary), mask=bbox)
+            # Create a buffer zone 5km round the border
+            border = border.to_crs('EPSG:29902')
+            buffer = border.buffer(5000)
+            buffer = buffer.to_crs('EPSG:4326')
 
         if 'NI' in args.maps:
             download_file_if_not_exists('https://opendata-daerani.hub.arcgis.com/datasets/DAERANI::rivers-strahler-ranking.zip?outSR=%7B%22latestWkid%22%3A29902%2C%22wkid%22%3A29900%7D', 'ni-rivers-strahler-ranking.zip')
             nirivers = gpd.read_file('ni-rivers-strahler-ranking.zip')
             nirivers.geometry = nirivers.geometry.to_crs('4326')
-            nirivers['linewidth'] = nirivers.strahler / 3
+            nirivers['linewidth'] = nirivers.strahler.pow(args.strahlerpower)
             nirivers = nirivers.sjoin(eubas, how='left')
+            if 'Border' in args.maps:
+                nirivers = nirivers.clip(buffer)
 
             download_file_if_not_exists('https://opendata-daerani.hub.arcgis.com/datasets/DAERANI::lake-water-bodies.geojson?outSR=%7B%22latestWkid%22%3A29902%2C%22wkid%22%3A29900%7D', 'ni-lake-water-bodies.geojson')
             nilakes = gpd.read_file('ni-lake-water-bodies.geojson')
             nilakes.geometry = nilakes.geometry.to_crs('4326')
             nilakes = nilakes.sjoin(eubas, how='left')
+            if 'Border' in args.maps:
+                nilakes = nilakes.clip(buffer)
 
             niareas = alt.Chart(nilakes).mark_geoshape().encode(
                 color=alt.Color(
@@ -113,23 +137,28 @@ if __name__ == '__main__':
                     scale=None
                 )
             ).properties(
-                height = 1300,
+                height = 1000,
                 width = 1000
             )
 
-            save(niareas + nilines, f'ni_rivers_lakes-{colour}.html', format='html')
+            ni = alt.layer(niareas, nilines).properties(background='#000')
+            save(ni, f'ni_rivers_lakes-{colour}-{args.basinlevel}.html', format='html')
 
         if 'ROI' in args.maps:
             download_file_if_not_exists('http://gis.epa.ie/geoserver/EPA/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=EPA:WATER_RIVNETROUTES&outputFormat=application%2Fjson&srsName=EPSG:4326', 'roi-river-netroutes.json')
             roirivers = gpd.read_file('roi-river-netroutes.json')
             roirivers.geometry = roirivers.geometry.to_crs('4326')
-            roirivers['linewidth'] = roirivers.ORDER_ / 3
+            roirivers['linewidth'] = roirivers.ORDER_.pow(args.strahlerpower)
             roirivers = roirivers.sjoin(eubas, how='left')
+            if 'Border' in args.maps:
+                roirivers = roirivers.clip(buffer)
 
             download_file_if_not_exists('https://opendata.arcgis.com/api/v3/datasets/0081128602fa45f49fe4f56e159040b3_0/downloads/data?format=geojson&spatialRefId=4326&where=1%3D1', 'Lakes_&_Reservoirs_-_OSi_National_250k_Map_Of_Ireland.geojson')
             roilakes = gpd.read_file('Lakes_&_Reservoirs_-_OSi_National_250k_Map_Of_Ireland.geojson')
             roilakes.geometry = roilakes.geometry.to_crs('4326')
             roilakes = roilakes.sjoin(eubas, how='left')
+            if 'Border' in args.maps:
+                roilakes = roilakes.clip(buffer)
 
             roiareas = alt.Chart(roilakes).mark_geoshape().encode(
                 color=alt.Color(
@@ -154,7 +183,9 @@ if __name__ == '__main__':
                 width = 1000
             )
 
-            save(roiareas + roilines, f'roi_rivers_lakes-{colour}.html', format='html')
+            roi = alt.layer(roiareas, roilines).properties(background='#000')
+            save(roi, f'roi_rivers_lakes-{colour}-{args.basinlevel}.html', format='html')
 
         if 'ROI' in args.maps and 'NI' in args.maps:
-            save(niareas + roiareas + nilines + roilines, f'ie_rivers_lakes-{colour}.html', format='html')
+            ie = alt.layer(niareas, roiareas, nilines, roilines).properties(background='#000')
+            save(ie, f'ie_rivers_lakes-{colour}-{args.basinlevel}.html', format='html')
