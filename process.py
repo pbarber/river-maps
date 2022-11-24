@@ -30,7 +30,7 @@ if __name__ == '__main__':
     parser.add_argument('--allcolours', help='Try all colour themes', default=False, action='store_true')
     parser.add_argument('--maps', help='Choose maps to create', nargs='+', default=['Hydro', 'NI', 'ROI'], choices=['Hydro', 'NI', 'ROI', 'Border'])
     parser.add_argument('--basinlevel', help='Basin level to use', default=7, type=int, choices=range(1,10))
-    parser.add_argument('--strahlerpower', help='Exponential to use when calculating line width from Strahler level', default=0.5, type=float)
+    parser.add_argument('--strahlerpower', help='Exponential to use when calculating line width from Strahler level', default=5.0, type=float)
     args = parser.parse_args()
 
     if args.allcolours is True:
