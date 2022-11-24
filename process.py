@@ -79,8 +79,8 @@ if __name__ == '__main__':
             ).configure_view(
                 strokeWidth=0
             ).properties(
-                height = 1300,
-                width = 1000,
+                height = 2600,
+                width = 2000,
                 background = '#000000',
                 title=alt.TitleParams(
                     text="Ireland's river basins",
@@ -150,12 +150,14 @@ if __name__ == '__main__':
                     "hexcolour", 
                     scale=None
                 )
-            ).properties(
-                height = 1000,
-                width = 1000
             )
 
-            ni = alt.layer(niareas, nilines).configure_view(
+            ni = alt.layer(
+                niareas.properties(
+                    height = 2000,
+                    width = 2000
+                ),
+                nilines).configure_view(
                 strokeWidth=0
             ).properties(
                 background = '#000000',
@@ -167,12 +169,12 @@ if __name__ == '__main__':
                     anchor='end',
                     font='Optima',
                     fontWeight='bold',
-                    fontSize=40,
+                    fontSize=80,
                     dy=-100,
                     color='#fff',
                     subtitleColor='#fff',
                     subtitleFont='Optima',
-                    subtitleFontSize=24,
+                    subtitleFontSize=48,
                     subtitleFontWeight='normal',
                 ),
             )
@@ -210,8 +212,8 @@ if __name__ == '__main__':
                     scale=None
                 )
             ).properties(
-                height = 1300,
-                width = 1000
+                height = 2600,
+                width = 2000
             )
 
             roi = alt.layer(roiareas, roilines).configure_view(
@@ -226,12 +228,12 @@ if __name__ == '__main__':
                     anchor='end',
                     font='Optima',
                     fontWeight='bold',
-                    fontSize=40,
+                    fontSize=80,
                     dy=-100,
                     color='#fff',
                     subtitleColor='#fff',
                     subtitleFont='Optima',
-                    subtitleFontSize=24,
+                    subtitleFontSize=48,
                     subtitleFontWeight='normal',
                 ),
             )
@@ -260,12 +262,12 @@ if __name__ == '__main__':
                     anchor='end',
                     font='Optima',
                     fontWeight='bold',
-                    fontSize=40,
+                    fontSize=80,
                     dy=-100,
                     color='#fff',
                     subtitleColor='#fff',
                     subtitleFont='Optima',
-                    subtitleFontSize=24,
+                    subtitleFontSize=48,
                     subtitleFontWeight='normal',
                 ),
             )
