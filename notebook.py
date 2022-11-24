@@ -40,8 +40,8 @@ def download_file_if_not_exists(url, fname=None):
 # 2. [x] choose colours and basin level for all-Ireland basins map (from HydroRivers and more detail from NI/IE), NI basins map and IE basins map
 # 3. [x] identify the land border
 # 4. [x] create a dataset which is rivers crossing the land border (spatial join all rivers within 10k of border, or better those crossing the border limited to only points within 10k of border)
-# 5. [ ] choose colours and export the border crossing dataset, add titles/subtitles
-# 6. [ ] write up text for tweet and linkedin and publish
+# 5. [x] choose colours and export the border crossing dataset, add titles/subtitles
+# 6. [x] write up text for tweet and linkedin and publish
 # 7. [ ] Cheshire version using the HydroRivers data (or maybe England data if any available)
 #
 # Altair [example](https://altair-viz.github.io/gallery/london_tube.html)
