@@ -1,5 +1,8 @@
 # River maps
 
+Draws maps of rivers, lakes and streams, coloured by river basin:
+
+![Rivers of Ireland](ie_rivers_lakes-Hokusai2-7.png)
 
 ## Setup
 
